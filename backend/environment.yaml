@@ -1,0 +1,31 @@
+name: ideological_profiling
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # 1. 核心 Python 版本 (3.10 对当前所有 AI 库兼容性最好)
+  - python=3.10
+  - pip
+  
+  # 2. 数据处理与基础科学计算 (Conda 安装更稳定)
+  - pandas>=2.0.0
+  - numpy>=1.24.0
+  
+  # 3. 传统机器学习库 (用于 PCA, DBSCAN)
+  - scikit-learn>=1.3.0
+  
+  # 4. 数据库连接驱动
+  - psycopg2>=2.9.6      # PostgreSQL 官方驱动
+  - sqlalchemy>=2.0.0    # ORM 框架，方便后续在 Python 里写 SQL
+  
+  # 5. 后端 API 框架 (提供给前端调用)
+  - flask>=3.0.0
+  - flask-cors>=4.0.0
+  
+  # 6. NLP 与大模型强相关的库 (部分通过 pip 安装最新版)
+  - pip:
+    - bertopic>=0.15.0                # 核心主题模型挖掘库
+    - sentence-transformers>=2.2.2    # 文本向量化 (Embedding) 工具
+    - jieba>=0.42.1                   # 中文分词利器
+    - umap-learn>=0.5.3               # 高级非线性降维 (BERTopic 依赖)
+    - hdbscan>=0.8.33                 # 高级密度聚类 (BERTopic 依赖)

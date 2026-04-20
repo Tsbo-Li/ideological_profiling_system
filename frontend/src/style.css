@@ -1,0 +1,21 @@
+:root {
+  --bg: #0b1220;
+  --card: #121a2b;
+  --text: #e6eefc;
+  --muted: #9fb0d0;
+  --border: #23304a;
+  --accent: #6aa9ff;
+  --danger: #ff8a8a;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a { color: inherit; }
+code { background: #0c1426; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); }
+
