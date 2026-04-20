@@ -10,6 +10,12 @@ def init_engine_and_session(database_url: str):
         pool_pre_ping=True,
         future=True,
     )
-    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    SessionLocal = sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
+        future=True,
+        expire_on_commit=False,
+    )
     return engine, SessionLocal
 

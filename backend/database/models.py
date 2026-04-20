@@ -105,7 +105,7 @@ class StudentNumericData(Base):
 class StudentTextData(Base):
     __tablename__ = "student_text_data"
 
-    textid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    text_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     student_id: Mapped[int] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     period: Mapped[Optional[str]] = mapped_column(String(7), nullable=True, index=True)  # YYYY-MM
     source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
@@ -118,7 +118,7 @@ class StudentTextData(Base):
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "textid": self.textid,
+            "text_id": self.text_id,
             "student_id": self.student_id,
             "period": self.period,
             "source": self.source,

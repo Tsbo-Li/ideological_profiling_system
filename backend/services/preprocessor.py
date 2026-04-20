@@ -226,7 +226,7 @@ class Preprocessor:
             content = self._sanitize_text_by_rule("content", row.get("content"))
 
         return {
-            "textid": int(row["textid"]),
+            "text_id": int(row["text_id"]),
             "student_id": int(row["student_id"]),
             "period": str(row.get("period") or ""),
             "source": str(row.get("source") or ""),
@@ -257,6 +257,27 @@ class Preprocessor:
             seen.add(key)
             deduped.append(payload)
         return deduped
+
+    def build_bertopic_inputs(
+        self,
+        rows: list[dict[str, Any]],
+        min_content_len: int = 5,
+        deduplicate_by_content: bool = True,
+        text_fields: list[str] | None = None,
+    ) -> tuple[list[str], list[dict[str, Any]]]:
+        """
+        Convert raw text rows into BERTopic-ready docs and aligned metadata.
+        - docs[i] is the cleaned text for BERTopic.
+        - metadata[i] is the source payload for mapping topic output back to rows/students.
+        """
+        payloads = self.build_text_payloads(
+            rows=rows,
+            min_content_len=min_content_len,
+            deduplicate_by_content=deduplicate_by_content,
+            text_fields=text_fields,
+        )
+        docs = [payload["content"] for payload in payloads]
+        return docs, payloads
 
 
 def test_preprocessor_with_db(limit: int = 5, normalization: str = "none") -> None:
@@ -302,7 +323,7 @@ def test_preprocessor_with_db(limit: int = 5, normalization: str = "none") -> No
         for item in text_rows_db:
             text_rows.append(
                 {
-                    "textid": item.textid,
+                    "text_id": item.text_id,
                     "student_id": item.student_id,
                     "period": item.period,
                     "source": item.source,

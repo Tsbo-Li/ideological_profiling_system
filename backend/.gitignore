@@ -1,0 +1,49 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# IDE / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs / temp
+*.log
+*.tmp
+*.temp
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Model/cache files
+.cache/
+huggingface/
+
+# Runtime outputs
+results/
+
+# Keep folder structure if needed
+!results/.gitkeep
+!results/excels/.gitkeep
+!results/models/.gitkeep
+!results/pics/.gitkeep
+
+# Notebook checkpoints
+.ipynb_checkpoints/
