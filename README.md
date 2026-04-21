@@ -129,6 +129,8 @@ Windows 任务计划（示例）见 `backend/README.md`。
 
 ### 模型/LLM（DeepSeek / OpenAI-compatible）
 
+注意embedding模型请前往 HuggingFace 或魔搭社区下载 `bge-base-zh-v1.5` 模型，并将其放置在 `backend/models/bge-base-zh-v1.5/` 目录下
+
 后端已支持从环境变量读取模型配置（以 OpenAI 兼容接口方式调用）。常见配置：
 
 - `AI_BASE_URL` 或 `DEEPSEEK_BASE_URL`
