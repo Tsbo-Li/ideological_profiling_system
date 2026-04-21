@@ -40,7 +40,9 @@ class TextClusteringService:
     注意：首次运行需要下载模型/embedding 资源（取决于 sentence-transformers 配置）。
     """
 
-    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-base-zh-v1.5"
+    # Default to a project-local embedding model directory if present (recommended for offline demos).
+    # If you keep using a HF model id, pass it via --embedding-model and the resolver will still work.
+    DEFAULT_EMBEDDING_MODEL = "models/bge-base-zh-v1.5"
     DEFAULT_HIT_STOPWORDS_PATH = "data/hit_stopwords.txt"
     # Other good Chinese embedding model options:
     # - "shibing624/text2vec-base-chinese"
@@ -110,7 +112,9 @@ class TextClusteringService:
         stopwords_path: Optional[str] = None,
     ) -> BERTopic:
         self._stop_words = self._load_hit_stopwords(stopwords_path=stopwords_path)
-        embedding_model = SentenceTransformer(embedding_model_name)
+        # Prefer a project-local embedding model directory if present.
+        # This allows fully offline runs after you copy the model under backend/models/.
+        embedding_model = SentenceTransformer(self._resolve_embedding_model_name(embedding_model_name))
         vectorizer_model = CountVectorizer(
             tokenizer=self._tokenize_zh,
             token_pattern=None,
@@ -124,6 +128,35 @@ class TextClusteringService:
             nr_topics=nr_topics,
             calculate_probabilities=True,
         )
+
+    @staticmethod
+    def _resolve_embedding_model_name(name_or_path: str) -> str:
+        raw = (name_or_path or "").strip()
+        if not raw:
+            return TextClusteringService.DEFAULT_EMBEDDING_MODEL
+
+        backend_root = Path(__file__).resolve().parents[1]
+        p = Path(raw)
+        if p.exists():
+            return str(p)
+        if not p.is_absolute():
+            # Prefer resolving relative to backend root (works even when cwd is not backend/).
+            candidate = backend_root / p
+            if candidate.exists():
+                return str(candidate)
+            # Fallback to cwd for backwards compatibility.
+            candidate2 = Path.cwd() / p
+            if candidate2.exists():
+                return str(candidate2)
+
+        # If user passed a HF model id (e.g. BAAI/bge-base-zh-v1.5), prefer local saved folder if exists:
+        # backend/models/BAAI__bge-base-zh-v1.5
+        safe = raw.replace("/", "__").replace("\\", "__").replace(":", "_")
+        local_candidate = backend_root / "models" / safe
+        if local_candidate.exists():
+            return str(local_candidate)
+
+        return raw
 
     def cluster(
         self,

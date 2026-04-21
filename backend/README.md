@@ -138,7 +138,7 @@ python -m services.text_clustering_service --period 2026-04 --stopwords-path dat
 
 文本聚类默认配置为：
 
-- embedding 模型：`BAAI/bge-base-zh-v1.5`
+- embedding 模型：`models/bge-base-zh-v1.5`（推荐提前下载/转移到本地，便于离线演示）
 - 分词：`jieba`
 - 停词表：哈工大停词表（`data/hit_stopwords.txt`）
 
