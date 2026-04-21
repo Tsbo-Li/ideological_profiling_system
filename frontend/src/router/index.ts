@@ -24,28 +24,28 @@ const router = createRouter({
         {
           path: "overview",
           component: OverviewPage,
-          meta: { title: "总览", roles: ["admin", "counselor"] }
+          meta: { title: "工作台总览", roles: ["admin", "counselor"] }
         },
         {
           path: "group-analysis",
           component: GroupAnalysisPage,
-          meta: { title: "学生群体分析", roles: ["admin", "counselor"] }
+          meta: { title: "群体画像分析", roles: ["admin", "counselor"] }
         },
         {
           path: "individuals",
           component: IndividualListPage,
-          meta: { title: "个体画像 · 学生列表", roles: ["admin", "counselor"] }
+          meta: { title: "学生个体画像 · 列表", roles: ["admin", "counselor"] }
         },
         {
           path: "individuals/:studentId",
           component: IndividualPortraitPage,
           props: true,
-          meta: { title: "个体画像 · 详情", roles: ["admin", "counselor"] }
+          meta: { title: "学生个体画像 · 详情", roles: ["admin", "counselor"] }
         },
         {
           path: "content-studio",
           component: ContentStudioPage,
-          meta: { title: "育人内容生成", roles: ["admin", "counselor"] }
+          meta: { title: "内容策划与生成", roles: ["admin", "counselor"] }
         },
         {
           path: "system",

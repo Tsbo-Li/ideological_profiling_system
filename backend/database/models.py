@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -181,6 +181,129 @@ class Profile(Base):
             "warning_handler": self.warning_handler,
             "warning_note": self.warning_note,
             "warning_handled_at": self.warning_handled_at.isoformat() if self.warning_handled_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class SocialHotTopic(Base):
+    __tablename__ = "social_hot_topics"
+    __table_args__ = (
+        UniqueConstraint("topic_key", name="uq_social_hot_topics_topic_key"),
+        CheckConstraint("status IN ('active','expired','blocked')", name="ck_social_hot_topics_status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    topic_key: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    platform: Mapped[str] = mapped_column(String(32), nullable=False, default="weibo", server_default="weibo", index=True)
+    source_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    heat_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    keywords: Mapped[Optional[list[str]]] = mapped_column(JSONB, nullable=True)
+    event_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    captured_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="active", server_default="active", index=True)
+    is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "topic_key": self.topic_key,
+            "title": self.title,
+            "summary": self.summary,
+            "platform": self.platform,
+            "source_url": self.source_url,
+            "heat_score": self.heat_score,
+            "keywords": self.keywords,
+            "event_time": self.event_time.isoformat() if self.event_time else None,
+            "captured_at": self.captured_at.isoformat() if self.captured_at else None,
+            "status": self.status,
+            "is_verified": bool(self.is_verified),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ContentDraft(Base):
+    __tablename__ = "content_drafts"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('article','video','video_prompt')",
+            name="ck_content_drafts_kind",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    context: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "kind": self.kind,
+            "title": self.title,
+            "text": self.text,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ContentGenerationJob(Base):
+    __tablename__ = "content_generation_jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('article','video','video_prompt')",
+            name="ck_content_generation_jobs_kind",
+        ),
+        CheckConstraint(
+            "status IN ('pending','running','done','error','cancelled')",
+            name="ck_content_generation_jobs_status",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending", server_default="pending", index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    error_message: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    context: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    draft_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "kind": self.kind,
+            "status": self.status,
+            "text": self.text,
+            "error_message": self.error_message,
+            "draft_id": self.draft_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

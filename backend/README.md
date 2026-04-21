@@ -68,6 +68,20 @@ python -m scripts.run_all_clustering --period 2026-04
 python -m scripts.run_all_clustering --period 2026-04 --n-clusters 3 --normalization minmax --no-generate-plot
 ```
 
+### 4.1.1 统一更新 profile + warning 分（推荐定时任务）
+
+一次执行：数值聚类 + 文本聚类 + warning 分重算。
+
+```bash
+python -m scripts.run_profile_warning_refresh --period 2026-04
+```
+
+如需提升夜间任务速度（不生成图）：
+
+```bash
+python -m scripts.run_profile_warning_refresh --no-generate-plot
+```
+
 ### 4.2 仅运行数值聚类
 
 ```bash
@@ -210,4 +224,26 @@ git push -u origin main
 - `backend/.gitignore` 已生效（避免把 `results/` 输出和缓存上传）
 - 本地 API 可启动：`python -m api_server.app`
 - 聚类脚本可运行：`python -m scripts.run_all_clustering --period 2026-04`
+
+---
+
+## 10）每天凌晨自动更新（Windows 任务计划）
+
+在项目根目录执行（按你的 Python 环境路径调整）：
+
+```bash
+schtasks /Create /SC DAILY /ST 00:00 /TN "IdeologicalProfileRefresh" /TR "\"D:\anaconda3\envs\ideological_profiling\python.exe\" -m scripts.run_profile_warning_refresh --no-generate-plot" /F
+```
+
+检查任务：
+
+```bash
+schtasks /Query /TN "IdeologicalProfileRefresh" /V /FO LIST
+```
+
+手动触发一次：
+
+```bash
+schtasks /Run /TN "IdeologicalProfileRefresh"
+```
 

@@ -16,8 +16,8 @@ class UapiSecrets:
 
     @staticmethod
     def from_env() -> "UapiSecrets":
-        api_key = os.getenv("UAPI_API_KEY", "").strip()
-        base_url = os.getenv("UAPI_BASE_URL", "https://api.uapi.example").strip()
+        api_key = os.getenv("UAPI_API_KEY", "uapi-f2t-hbofCTf_zpg-w4XoBA8FYVk5xpHzlH-0ClAk").strip()
+        base_url = os.getenv("UAPI_BASE_URL", "https://uapis.cn/api/v1/misc").strip()
         return UapiSecrets(api_key=api_key, base_url=base_url)
 
     def masked(self) -> dict:

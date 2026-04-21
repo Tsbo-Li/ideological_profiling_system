@@ -24,16 +24,16 @@ function login() {
 <template>
   <div class="login-wrap">
     <div class="panel">
-      <h1>数智精准育人系统</h1>
-      <p class="subtitle">登录后进入辅导员工作台总览</p>
-      <input v-model="form.username" placeholder="用户名" @keydown.enter="login" />
-      <input v-model="form.password" type="password" placeholder="密码" @keydown.enter="login" />
+      <h1>数智育人研判平台</h1>
+      <p class="subtitle">登录后进入业务工作台</p>
+      <input v-model="form.username" placeholder="请输入账号" @keydown.enter="login" />
+      <input v-model="form.password" type="password" placeholder="请输入密码" @keydown.enter="login" />
       <select v-model="form.role">
-        <option value="counselor">辅导员端</option>
-        <option value="admin">管理员端</option>
+          <option value="counselor">辅导员</option>
+          <option value="admin">管理员</option>
       </select>
       <button :disabled="loading || !form.username.trim() || !form.password.trim()" @click="login">
-        {{ loading ? "登录中..." : "登录" }}
+        {{ loading ? "登录中..." : "立即登录" }}
       </button>
     </div>
   </div>

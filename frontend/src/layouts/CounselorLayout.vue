@@ -7,10 +7,10 @@ const router = useRouter();
 const role = computed(() => localStorage.getItem("edu_role") || "counselor");
 
 const counselorNav = [
-  { to: "/overview", label: "总览", match: (p: string) => p === "/overview" },
-  { to: "/group-analysis", label: "学生群体分析", match: (p: string) => p.startsWith("/group-analysis") },
-  { to: "/individuals", label: "个体画像分析", match: (p: string) => p.startsWith("/individuals") },
-  { to: "/content-studio", label: "育人内容生成", match: (p: string) => p.startsWith("/content-studio") }
+  { to: "/overview", label: "工作台总览", match: (p: string) => p === "/overview" },
+  { to: "/group-analysis", label: "群体画像分析", match: (p: string) => p.startsWith("/group-analysis") },
+  { to: "/individuals", label: "学生个体画像", match: (p: string) => p.startsWith("/individuals") },
+  { to: "/content-studio", label: "内容策划与生成", match: (p: string) => p.startsWith("/content-studio") }
 ];
 
 const adminNav = [{ to: "/system", label: "系统管理", match: (p: string) => p.startsWith("/system") }];
@@ -38,8 +38,8 @@ function logout() {
   <div class="shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="title">数智育人工作台</div>
-        <div class="sub">{{ role === "admin" ? "管理员 · 辅导员视图" : "辅导员端" }}</div>
+        <div class="title">数智育人研判平台</div>
+        <div class="sub">{{ role === "admin" ? "管理员视角（含辅导员功能）" : "辅导员业务视角" }}</div>
       </div>
       <nav class="nav">
         <RouterLink

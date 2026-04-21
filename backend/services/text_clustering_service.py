@@ -245,13 +245,13 @@ class TextClusteringService:
                 {
                     "topic_id": int(topic_id),
                     "count": int(count),
-                    "display_label": topic_profiles.get(topic_id, {}).get("display_name", f"主题{topic_id}"),
+                    "label_display": topic_profiles.get(topic_id, {}).get("display_name", f"主题{topic_id}"),
                 }
                 for topic_id, count in top_topics
             ]
             main_profile = topic_profiles.get(main_topic, {})
             student_text_tags[student_id] = {
-                "display_label": main_profile.get("display_name", f"主题{main_topic}"),
+                "label_display": main_profile.get("display_name", f"主题{main_topic}"),
                 "label_code": f"topic_{main_topic}" if main_topic != -1 else "topic_outlier",
                 "main_topic_id": int(main_topic),
                 "keywords": main_profile.get("keywords", []),

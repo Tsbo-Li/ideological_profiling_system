@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import * as echarts from "echarts";
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { RouterLink } from "vue-router";
 import UiCard from "../../components/UiCard.vue";
-import { getClusterDistribution, getCounselorDashboard } from "../../api/counselor";
-import type { CounselorDashboard, GroupDistributionItem } from "../../types";
+import { getClusterDistribution, getCounselorDashboard, getHotTopicsPage } from "../../api/counselor";
+import type { CounselorDashboard, GroupDistributionItem, HotTopic } from "../../types";
 
 const loading = ref(true);
 const dash = ref<CounselorDashboard | null>(null);
-const clusterMethod = ref<"behavior_kmeans" | "text_topic" | "temporal">("behavior_kmeans");
+const hotPlatform = ref<"douyin" | "bilibili">("douyin");
+const hotRows = ref<HotTopic[]>([]);
+const hotTotal = ref(0);
+const hotPage = ref(1);
+const hotPageSize = ref(10);
+const hotTotalPages = ref(1);
+const clusterMethod = ref<"behavior_kmeans" | "text_topic">("behavior_kmeans");
 const clusterRows = ref<GroupDistributionItem[]>([]);
 
 const radarEl = ref<HTMLDivElement | null>(null);
@@ -18,11 +25,9 @@ const trendChart = shallowRef<echarts.ECharts | null>(null);
 const methodHint = computed(() => {
   switch (clusterMethod.value) {
     case "behavior_kmeans":
-      return "基于行为特征向量 K-Means，簇规模反映当前在册学生分布。";
+      return "基于数值行为特征进行 K-Means 聚类，反映当前学生群体结构。";
     case "text_topic":
-      return "基于文本主题模型，同一学生可能跨主题，人数为加权估算。";
-    case "temporal":
-      return "基于作息与时间序列特征，用于识别昼夜节律差异群体。";
+      return "基于文本主题模型进行聚类，同一学生可跨主题，人数为加权估算值。";
     default:
       return "";
   }
@@ -38,15 +43,43 @@ function platformLabel(p: string) {
   if (p === "weibo") return "微博";
   if (p === "douyin") return "抖音";
   if (p === "xiaohongshu") return "小红书";
+  if (p === "bilibili") return "B站";
   return p;
+}
+
+function toHeat(v: unknown) {
+  if (typeof v !== "number" || Number.isNaN(v)) return "—";
+  if (v >= 10000) return `${(v / 10000).toFixed(1)}万`;
+  return `${Math.round(v)}`;
 }
 
 function setRadar(dist: GroupDistributionItem[]) {
   if (!radarEl.value) return;
   if (!radarChart.value) radarChart.value = echarts.init(radarEl.value);
   const max = Math.max(...dist.map((d) => d.value), 1);
+  const labelMetaMap = new Map(
+    dist.map((d) => [
+      d.name,
+      {
+        labelDisplay: d.label_display ?? d.name,
+        labelCode: d.label_code ?? "-"
+      }
+    ])
+  );
   radarChart.value.setOption({
-    tooltip: { trigger: "item" },
+    tooltip: {
+      trigger: "item",
+      formatter: (params: unknown) => {
+        const p = params as { value?: number[] };
+        const values = Array.isArray(p.value) ? p.value : [];
+        const lines = dist.map((d, i) => {
+          const meta = labelMetaMap.get(d.name);
+          const val = values[i] ?? d.value;
+          return `${meta?.labelDisplay ?? d.name}（${meta?.labelCode ?? "-"}）：${val}`;
+        });
+        return lines.join("<br/>");
+      }
+    },
     radar: {
       indicator: dist.map((d) => ({ name: d.name, max: max * 1.15 })),
       splitArea: { areaStyle: { color: ["rgba(106,169,255,0.06)", "rgba(106,169,255,0.02)"] } }
@@ -85,13 +118,28 @@ function setTrend(d: CounselorDashboard) {
 
 async function loadClusters() {
   clusterRows.value = await getClusterDistribution(clusterMethod.value);
-  setRadar(clusterRows.value);
+}
+
+async function loadHotTopics() {
+  const resp = await getHotTopicsPage({
+    platform: hotPlatform.value,
+    limit: hotPageSize.value,
+    offset: (hotPage.value - 1) * hotPageSize.value
+  });
+  hotRows.value = resp.items;
+  hotTotal.value = resp.total;
+  hotTotalPages.value = Math.max(1, Math.ceil(resp.total / hotPageSize.value));
+  if (hotPage.value > hotTotalPages.value) {
+    hotPage.value = hotTotalPages.value;
+    return void loadHotTopics();
+  }
 }
 
 onMounted(async () => {
   loading.value = true;
   try {
     dash.value = await getCounselorDashboard();
+    await loadHotTopics();
     await loadClusters();
     if (dash.value) setTrend(dash.value);
   } finally {
@@ -115,6 +163,40 @@ watch(clusterMethod, () => {
   void loadClusters();
 });
 
+async function tryRenderRadar() {
+  if (loading.value) return;
+  if (!dash.value) return;
+  if (!radarEl.value) return;
+  if (!clusterRows.value.length) return;
+  await nextTick();
+  setRadar(clusterRows.value);
+}
+
+async function tryRenderTrend() {
+  if (loading.value) return;
+  if (!dash.value) return;
+  if (!trendEl.value) return;
+  await nextTick();
+  setTrend(dash.value);
+}
+
+watch([loading, () => dash.value, () => radarEl.value, () => clusterRows.value], () => {
+  void tryRenderRadar();
+});
+
+watch([loading, () => dash.value, () => trendEl.value], () => {
+  void tryRenderTrend();
+});
+
+watch(hotPlatform, () => {
+  hotPage.value = 1;
+  void loadHotTopics();
+});
+
+watch(hotPage, () => {
+  void loadHotTopics();
+});
+
 watch(
   () => dash.value,
   (d) => {
@@ -129,19 +211,19 @@ watch(
     <template v-else-if="dash">
       <section class="kpi-row">
         <UiCard class="kpi">
-          <div class="kpi-label">在管学生总数</div>
+          <div class="kpi-label">在册学生总数</div>
           <div class="kpi-value">{{ dash.kpis.totalStudents }}</div>
         </UiCard>
         <UiCard class="kpi kpi-warn">
-          <div class="kpi-label">预警关注人数</div>
+          <div class="kpi-label">预警关注学生数</div>
           <div class="kpi-value">{{ dash.kpis.warningStudents }}</div>
         </UiCard>
         <UiCard class="kpi kpi-danger">
-          <div class="kpi-label">高风险预警人数</div>
+          <div class="kpi-label">高风险学生数</div>
           <div class="kpi-value">{{ dash.kpis.highRiskStudents }}</div>
         </UiCard>
         <UiCard class="kpi">
-          <div class="kpi-label">处置中 / 已闭环</div>
+          <div class="kpi-label">处理中 / 已闭环</div>
           <div class="kpi-value">
             <span class="accent">{{ dash.kpis.inProgressTasks }}</span>
             <span class="sep">/</span>
@@ -152,50 +234,71 @@ watch(
 
       <div class="grid-main">
         <div class="col-center">
-          <UiCard title="群体聚类雷达（可切换聚类方式）">
+          <UiCard title="群体聚类分布（雷达）">
             <div class="cluster-bar">
               <label class="lbl">聚类方式</label>
               <select v-model="clusterMethod" class="sel">
-                <option value="behavior_kmeans">行为 K-Means</option>
-                <option value="text_topic">文本主题</option>
-                <option value="temporal">时间节律</option>
+                <option value="behavior_kmeans">数值特征聚类</option>
+                <option value="text_topic">文本主题聚类</option>
               </select>
             </div>
             <p class="hint-line">{{ methodHint }}</p>
             <div ref="radarEl" class="chart radar-h" />
           </UiCard>
 
-          <UiCard title="近 7 日预警触发趋势（示意）">
+          <UiCard title="近 7 日预警触发趋势">
             <div ref="trendEl" class="chart trend-h" />
           </UiCard>
 
-          <UiCard title="预警列表">
+          <UiCard title="待关注预警事件">
             <ul class="alert-list">
               <li v-for="a in dash.alerts" :key="a.id" class="alert-item">
                 <div class="alert-top">
                   <span class="pill" :class="'r-' + a.risk_level">{{ riskLabel(a.risk_level) }}风险</span>
                   <span class="t-time">{{ a.created_at }}</span>
                 </div>
-                <div class="t-title">{{ a.title }}</div>
-                <p class="t-sum">{{ a.summary }}</p>
+                <RouterLink class="t-title t-link" :to="`/individuals/${encodeURIComponent(a.student_id)}`">
+                  {{ a.student_id }}
+                </RouterLink>
+                <p class="t-sum">
+                  {{ a.class_name }} ·{{ a.numeric_cluster_label }} · {{ a.text_cluster_label }}
+                </p>
               </li>
             </ul>
           </UiCard>
         </div>
 
         <aside class="col-side">
-          <UiCard title="近期热点（多平台抓取示意）">
-            <p class="hint-line side-note">展示来源与抓取时间；实际接入需配置采集任务与合规审核。</p>
+          <UiCard title="近期热点榜单">
+            <p class="hint-line side-note">支持平台筛选与分页查看，点击标题可跳转至原始链接。</p>
+            <div class="cluster-bar">
+              <label class="lbl">平台</label>
+              <select v-model="hotPlatform" class="sel">
+                <option value="douyin">抖音</option>
+                <option value="bilibili">B站</option>
+              </select>
+            </div>
             <ul class="hot-list">
-              <li v-for="h in dash.hot_topics" :key="h.id" class="hot-item">
+              <li v-for="h in hotRows" :key="h.id" class="hot-item">
                 <div class="hot-meta">
                   <span class="plat">{{ platformLabel(h.platform) }}</span>
-                  <span class="heat">{{ h.heat_label }}</span>
+                  <span class="heat">{{ h.heat_label }} · 热度 {{ toHeat(h.heat_score) }}</span>
                 </div>
-                <div class="hot-title">{{ h.title }}</div>
+                <a class="hot-title hot-link" :href="h.source_url || '#'" target="_blank" rel="noopener noreferrer">
+                  {{ h.title }}
+                </a>
                 <div class="hot-time">{{ h.captured_at }}</div>
               </li>
             </ul>
+            <div class="pager">
+              <span class="muted">共 {{ hotTotal }} 条，第 {{ hotPage }} / {{ hotTotalPages }} 页</span>
+              <div class="pager-btns">
+                <button type="button" class="pg-btn" :disabled="hotPage <= 1" @click="hotPage = 1">首页</button>
+                <button type="button" class="pg-btn" :disabled="hotPage <= 1" @click="hotPage -= 1">上一页</button>
+                <button type="button" class="pg-btn" :disabled="hotPage >= hotTotalPages" @click="hotPage += 1">下一页</button>
+                <button type="button" class="pg-btn" :disabled="hotPage >= hotTotalPages" @click="hotPage = hotTotalPages">末页</button>
+              </div>
+            </div>
           </UiCard>
         </aside>
       </div>
@@ -359,6 +462,13 @@ watch(
   font-size: 14px;
   margin-bottom: 4px;
 }
+.t-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.t-link:hover {
+  text-decoration: underline;
+}
 .t-sum {
   margin: 0;
   font-size: 13px;
@@ -372,6 +482,21 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.hot-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hot-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.g-title {
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 6px;
 }
 .hot-item {
   padding: 10px 0;
@@ -394,9 +519,39 @@ watch(
   font-size: 13px;
   line-height: 1.45;
 }
+.hot-link {
+  color: inherit;
+  text-decoration: none;
+}
+.hot-link:hover {
+  text-decoration: underline;
+}
 .hot-time {
   margin-top: 6px;
   font-size: 11px;
   color: var(--muted);
+}
+.pager {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.pager-btns {
+  display: flex;
+  gap: 6px;
+}
+.pg-btn {
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0c1426;
+  color: var(--text);
+  cursor: pointer;
+}
+.pg-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

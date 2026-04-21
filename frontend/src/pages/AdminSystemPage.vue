@@ -3,9 +3,9 @@ import UiCard from "../components/UiCard.vue";
 </script>
 
 <template>
-  <UiCard title="系统管理（占位）">
-    <p class="p">原「模型运维 / 数据监控 / 反馈闭环」等管理模块已随框架重置移除。</p>
-    <p class="p">若需要恢复管理员能力，可在此路由下逐步挂载新的子页面与接口。</p>
+  <UiCard title="系统管理（建设中）">
+    <p class="p">当前页面为管理员入口预留位，后续可接入模型运维、任务调度、数据审计与权限管理能力。</p>
+    <p class="p">如需上线管理员功能，可在本路由下按模块逐步扩展子页面与后端接口。</p>
   </UiCard>
 </template>
 

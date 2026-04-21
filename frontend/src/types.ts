@@ -25,9 +25,15 @@ export type StudentProfile = {
   cognitive_tags: string[];
   radar_scores: RadarScores;
   intervention_action: string | null;
+  warning_score?: number | null;
+  warning_status?: "pending" | "processing" | "resolved" | "ignored" | null;
+  warning_handler?: string | null;
+  warning_handled_at?: string | null;
   last_computed_at: string | null;
   /** 活跃度序列，与库表 `student_profiles.activity_trend` 一致 */
   activity_trend: WarningTrendPoint[];
+  /** 来自原始 content 预处理后的关键词（词云用） */
+  content_keywords?: string[];
 };
 
 export type RiskLevel = "low" | "medium" | "high";
@@ -43,6 +49,10 @@ export type KpiStats = {
 export type DashboardAlert = {
   id: string;
   title: string;
+  student_id: string;
+  class_name: string;
+  numeric_cluster_label: string;
+  text_cluster_label: string;
   risk_level: RiskLevel;
   summary: string;
   created_at: string;
@@ -50,15 +60,33 @@ export type DashboardAlert = {
 
 export type HotTopic = {
   id: string;
-  platform: "weibo" | "douyin" | "xiaohongshu";
+  platform: "weibo" | "douyin" | "xiaohongshu" | "bilibili";
   title: string;
+  summary?: string | null;
+  heat_score?: number | null;
   heat_label: string;
+  source_url?: string | null;
   captured_at: string;
+  event_time?: string | null;
+};
+
+export type HotTopicsByPlatform = Record<string, HotTopic[]>;
+
+export type PagedHotTopics = {
+  platform: "douyin" | "bilibili";
+  items: HotTopic[];
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 export type GroupDistributionItem = {
   name: string;
   value: number;
+  label_display?: string;
+  label_code?: string;
+  cluster_id?: number | null;
+  topic_id?: number | null;
 };
 
 export type CounselorDashboard = {
@@ -78,6 +106,16 @@ export type GroupPortrait = {
   topStudent: string;
   cluster_label?: number;
   representative_behavior_tags?: string[];
+  representative_text_tags?: string[];
+};
+
+export type CounselorScatterPoint = {
+  student_id: string;
+  group: string;
+  cluster_label?: number | null;
+  x: number;
+  y: number;
+  warning_score: number;
 };
 
 export type StudentListItem = {
@@ -87,6 +125,13 @@ export type StudentListItem = {
   latest_warning_score: number;
   latest_active_at: string;
   tags: string[];
+};
+
+export type PagedStudents = {
+  items: StudentListItem[];
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 /** 与 `StudentProfile` 相同；保留别名便于页面语义区分 */
