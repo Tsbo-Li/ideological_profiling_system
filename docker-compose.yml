@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ideological_profiling_sys
+      POSTGRES_USER: ideological
+      POSTGRES_PASSWORD: ideological_pwd
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ideological -d ideological_profiling_sys"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+psycopg2://ideological:ideological_pwd@db:5432/ideological_profiling_sys
+      # Optional: keep HF fully offline once you copy local embedding model under backend/models/
+      HF_HUB_OFFLINE: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist logs and allow mounting local models if you want
+      - ./backend/logs:/app/backend/logs
+      - ./backend/models:/app/backend/models
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  db_data:
