@@ -1492,7 +1492,7 @@ class CounselorApiService:
             (int(sid), str(ts) if ts is not None else "", int(cnt), int(total_len or 0))
             for sid, ts, cnt, total_len in rows
         )
-        return ("bge-base-zh-v1.5", normalized)
+        return (self._resolve_text_embedding_model_name(), normalized)
 
     def _get_text_embedding_model(self):
         if self._text_embedding_model is not None:
@@ -1500,10 +1500,18 @@ class CounselorApiService:
         try:
             from sentence_transformers import SentenceTransformer
 
-            self._text_embedding_model = SentenceTransformer("BAAI/bge-base-zh-v1.5")
+            self._text_embedding_model = SentenceTransformer(self._resolve_text_embedding_model_name())
         except Exception:
             self._text_embedding_model = None
         return self._text_embedding_model
+
+    def _resolve_text_embedding_model_name(self) -> str:
+        # Keep counselor-side embedding lookup aligned with text clustering defaults:
+        # prefer local offline model under backend/models before falling back to HF id.
+        local_model = Path(__file__).resolve().parents[1] / "models" / "bge-base-zh-v1.5"
+        if local_model.exists():
+            return str(local_model)
+        return "BAAI/bge-base-zh-v1.5"
 
     def _build_cluster_label_map(self, kind: str) -> dict[int | None, dict[str, str]]:
         rows = self._latest_profile_rows()

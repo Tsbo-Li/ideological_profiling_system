@@ -24,8 +24,20 @@ dependencies:
   
   # 6. NLP 与大模型强相关的库 (部分通过 pip 安装最新版)
   - pip:
+    # --- Web server (production) ---
+    - gunicorn>=21.2.0
+
+    # --- BERTopic / Embeddings ---
     - bertopic>=0.15.0                # 核心主题模型挖掘库
     - sentence-transformers>=2.2.2    # 文本向量化 (Embedding) 工具
     - jieba>=0.42.1                   # 中文分词利器
     - umap-learn>=0.5.3               # 高级非线性降维 (BERTopic 依赖)
     - hdbscan>=0.8.33                 # 高级密度聚类 (BERTopic 依赖)
+
+    # --- HF ecosystem (stable caching/offline) ---
+    - huggingface-hub>=0.20.0
+    - transformers>=4.36.0
+
+    # --- Optional but commonly needed by sentence-transformers ---
+    # torch will be installed automatically by pip if missing; pin only if you hit compat issues.
+    # - torch==2.2.2

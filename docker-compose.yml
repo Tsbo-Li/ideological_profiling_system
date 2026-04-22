@@ -1,4 +1,11 @@
 services:
+  dailyhot:
+    image: imsyy/dailyhot-api:latest
+    container_name: dailyhot_api
+    ports:
+      - "6688:6688"
+    restart: always
+
   db:
     image: postgres:16-alpine
     environment:
@@ -32,6 +39,29 @@ services:
       - "8000:8000"
     volumes:
       # Persist logs and allow mounting local models if you want
+      - ./backend/logs:/app/backend/logs
+      - ./backend/models:/app/backend/models
+
+  scheduler:
+    build:
+      context: ./backend
+    entrypoint: ["/app/backend/scripts/docker_scheduler.sh"]
+    environment:
+      DATABASE_URL: postgresql+psycopg2://ideological:ideological_pwd@db:5432/ideological_profiling_sys
+      HF_HUB_OFFLINE: "1"
+      # Daily execution time (server local time)
+      SCHEDULE_HOUR: "0"
+      SCHEDULE_MINUTE: "10"
+      # Run once immediately after container starts
+      RUN_ON_STARTUP: "1"
+      # Keep automated job fast by default
+      GENERATE_PLOT: "0"
+    depends_on:
+      db:
+        condition: service_healthy
+      dailyhot:
+        condition: service_started
+    volumes:
       - ./backend/logs:/app/backend/logs
       - ./backend/models:/app/backend/models
 

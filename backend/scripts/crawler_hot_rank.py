@@ -58,7 +58,8 @@ def _extract_rows(payload: Any) -> list[dict[str, Any]]:
 
 def fetch_dailyhot() -> dict[str, Any]:
     base_urls = [
-        "https://dailyhot-five-opal.vercel.app",
+        # "https://dailyhot-five-opal.vercel.app",
+        "http://dailyhot:6688",
     ]
     routes = {
         "bilibili": "bilibili",
@@ -89,7 +90,7 @@ def fetch_dailyhot() -> dict[str, Any]:
                 break
 
     if not merged["data"]:
-        raise RuntimeError("DailyHotApi returned no data")
+        print("[warn] DailyHotApi returned no data, skip this round.")
     return merged
 
 
@@ -208,7 +209,8 @@ def main() -> None:
     payload = fetch_dailyhot()
     topics = normalize_topics(payload)
     if not topics:
-        raise RuntimeError("no topics parsed")
+        print("[warn] no topics parsed, skip db upsert this round.")
+        return
 
     if args.dry_run:
         print(json.dumps(topics[:20], ensure_ascii=False, indent=2, default=str))
